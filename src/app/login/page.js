@@ -14,9 +14,6 @@ export default function LoginPage() {
         {/* Login Form Side */}
         <div className="w-full lg:w-1/2 bg-white p-8 md:p-12">
           <div className="flex flex-col h-full justify-center">
-            <div className="mb-8 flex justify-center lg:justify-start">
-              <Logo size="default" />
-            </div>
             <LoginForm />
           </div>
         </div>
