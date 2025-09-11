@@ -1,7 +1,6 @@
 import React from 'react';
+import { DashboardLayout, Header } from '../../components/layout';
 import {
-  DashboardLayout,
-  Header,
   WelcomeHeader,
   InboxCard,
   IncomeVariationsChart,
@@ -9,7 +8,7 @@ import {
   SalesCard,
   MonthlySalesCard,
   ProjectsTable
-} from '../../../components/dashboard';
+} from '../../components/features/dashboard';
 
 export default function TeacherDashboard() {
   // Sample data for the dashboard

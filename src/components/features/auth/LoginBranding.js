@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { Logo } from '../common';
+import { Logo } from '../../ui';
 
 const LoginBranding = () => {
   return (

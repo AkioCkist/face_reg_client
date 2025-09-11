@@ -1,6 +1,6 @@
 import React from 'react';
-import { LoginForm, LoginBranding } from '../../../components/auth';
-import { Logo } from '../../../components/common';
+import { LoginForm, LoginBranding } from '../../components/features/auth';
+import { Logo } from '../../components/ui';
 
 export const metadata = {
   title: 'Login - Face Recognition Attendance System',

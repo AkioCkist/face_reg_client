@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Button, Input, Checkbox, Divider, SocialButton } from '../common';
+import { Button, Input, Checkbox, Divider, SocialButton } from '../../ui';
 
 const LoginForm = () => {
   return (
