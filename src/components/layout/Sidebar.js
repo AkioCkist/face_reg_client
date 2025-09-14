@@ -106,12 +106,21 @@ const Sidebar = ({ userRole = 'student' }) => {
       {/* Toggle button positioned at the right edge center of the sidebar (half outside) */}
       <button
         onClick={() => setExpanded((s) => !s)}
-        className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-gray-100 text-gray-500 z-30"
+        className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 p-0 rounded-full z-30"
         aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={expanded ? 'M11 19l-7-7 7-7m8 14l-7-7 7-7' : 'M13 5l7 7-7 7M5 5l7 7-7 7'} />
-        </svg>
+        {/* white circular background for the toggle */}
+        <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-sm ring-1 ring-gray-100 text-gray-500 hover:bg-gray-50 transition-colors">
+          {expanded ? (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
+          )}
+        </div>
       </button>
 
       {/* Logo / branding */}
