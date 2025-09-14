@@ -1,58 +1,48 @@
-"use client"
+"use client";
+
 import React, { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { UserAvatar } from '../ui';
+import { UserAvatar, Logo } from '../ui';
 
 const Sidebar = ({ userRole = 'student' }) => {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
-  
-  // Define menu items based on user role
-  const getMenuItems = (role) => {
-    const commonItems = [
-      { id: 'profile', icon: 'user', label: 'Profile', href: `/${role === 'admin' ? 'admin' : `dashboard_${role}`}/profile` },
-    ];
-    
-    switch (role) {
-      case 'teacher':
-        return [
-          { id: 'dashboard', icon: 'grid', label: 'Dashboard', href: '/dashboard_teacher' },
-          { id: 'classes', icon: 'users', label: 'My Classes', href: '/dashboard_teacher/classes' },
-          { id: 'attendance', icon: 'check-square', label: 'Attendance', href: '/dashboard_teacher/attendance' },
-          { id: 'reports', icon: 'bar-chart', label: 'Reports', href: '/dashboard_teacher/reports' },
-          ...commonItems,
-          { id: 'settings', icon: 'settings', label: 'Settings', href: '/dashboard_teacher/settings' },
-        ];
-      case 'student':
-        return [
-          { id: 'dashboard', icon: 'grid', label: 'Dashboard', href: '/dashboard_student' },
-          { id: 'courses', icon: 'book', label: 'My Courses', href: '/dashboard_student/courses' },
-          { id: 'attendance', icon: 'check-square', label: 'My Attendance', href: '/dashboard_student/attendance' },
-          ...commonItems,
-          { id: 'settings', icon: 'settings', label: 'Settings', href: '/dashboard_student/settings' },
-        ];
-      case 'admin':
-        return [
-          { id: 'dashboard', icon: 'grid', label: 'Dashboard', href: '/admin' },
-          { id: 'users', icon: 'users', label: 'User Management', href: '/admin/users' },
-          { id: 'classes', icon: 'layout', label: 'Classes', href: '/admin/classes' },
-          { id: 'logs', icon: 'clipboard', label: 'System Logs', href: '/admin/logs' },
-          { id: 'settings', icon: 'sliders', label: 'System Settings', href: '/admin/settings' },
-          ...commonItems,
-        ];
-      default:
-        return commonItems;
-    }
-  };
-  
-  const menuItems = getMenuItems(userRole);
 
-  // Icons mapping for menu items
+  const commonItems = [
+    { id: 'profile', icon: 'user', label: 'Profile', href: userRole === 'admin' ? '/admin/profile' : `/dashboard_${userRole}/profile` },
+  ];
+
+  const roleMenus = {
+    teacher: [
+      { id: 'dashboard', icon: 'grid', label: 'Dashboard', href: '/dashboard_teacher' },
+      { id: 'classes', icon: 'users', label: 'My Classes', href: '/dashboard_teacher/classes' },
+      { id: 'attendance', icon: 'check-square', label: 'Attendance', href: '/dashboard_teacher/attendance' },
+      { id: 'reports', icon: 'bar-chart', label: 'Reports', href: '/dashboard_teacher/reports' },
+      ...commonItems,
+      { id: 'settings', icon: 'settings', label: 'Settings', href: '/dashboard_teacher/settings' },
+    ],
+    student: [
+      { id: 'dashboard', icon: 'grid', label: 'Dashboard', href: '/dashboard_student' },
+      { id: 'courses', icon: 'book', label: 'My Courses', href: '/dashboard_student/courses' },
+      { id: 'attendance', icon: 'check-square', label: 'My Attendance', href: '/dashboard_student/attendance' },
+      ...commonItems,
+      { id: 'settings', icon: 'settings', label: 'Settings', href: '/dashboard_student/settings' },
+    ],
+    admin: [
+      { id: 'dashboard', icon: 'grid', label: 'Dashboard', href: '/admin' },
+      { id: 'users', icon: 'users', label: 'User Management', href: '/admin/users' },
+      { id: 'classes', icon: 'layout', label: 'Classes', href: '/admin/classes' },
+      { id: 'logs', icon: 'clipboard', label: 'System Logs', href: '/admin/logs' },
+      { id: 'settings', icon: 'sliders', label: 'System Settings', href: '/admin/settings' },
+      ...commonItems,
+    ],
+  };
+
+  const menuItems = roleMenus[userRole] || commonItems;
+
   const getIcon = (iconName) => {
-    const iconClasses = "w-5 h-5";
-    
+    const iconClasses = 'w-5 h-5';
     switch (iconName) {
       case 'grid':
         return (
@@ -84,19 +74,6 @@ const Sidebar = ({ userRole = 'student' }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
         );
-      case 'user':
-        return (
-          <svg xmlns="http://www.w3.org/2000/svg" className={iconClasses} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-        );
-      case 'settings':
-        return (
-          <svg xmlns="http://www.w3.org/2000/svg" className={iconClasses} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        );
       case 'layout':
         return (
           <svg xmlns="http://www.w3.org/2000/svg" className={iconClasses} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,26 +102,27 @@ const Sidebar = ({ userRole = 'student' }) => {
   };
 
   return (
-    <aside className={`${expanded ? 'w-64' : 'w-20'} bg-white h-screen shadow-sm flex flex-col transition-all duration-300 z-20`}>
-      {/* Logo Section */}
-      <div className="h-16 flex items-center px-4 border-b border-gray-100">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="text-blue-600 font-bold text-xl">
-            {expanded ? 'FaceAttend' : 'FA'}
-          </div>
-        </Link>
-        <button 
-          onClick={() => setExpanded(!expanded)}
-          className="ml-auto p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={expanded ? "M11 19l-7-7 7-7m8 14l-7-7 7-7" : "M13 5l7 7-7 7M5 5l7 7-7 7"} />
-          </svg>
-        </button>
+    <aside className={`${expanded ? 'w-64' : 'w-20'} bg-white h-screen shadow-sm flex flex-col transition-all duration-300 z-20 relative`}>
+      {/* Toggle button positioned at the right edge center of the sidebar (half outside) */}
+      <button
+        onClick={() => setExpanded((s) => !s)}
+        className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-gray-100 text-gray-500 z-30"
+        aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={expanded ? 'M11 19l-7-7 7-7m8 14l-7-7 7-7' : 'M13 5l7 7-7 7M5 5l7 7-7 7'} />
+        </svg>
+      </button>
+
+      {/* Logo / branding */}
+      <div className="h-16 relative px-4 border-b border-gray-100 flex items-center">
+        <div className={`absolute top-1/2 transform -translate-y-1/2 ${expanded ? 'left-1/2 -translate-x-1/2' : 'left-4 -translate-x-0'}`}>
+          {expanded ? <Logo size="default" variant="default" /> : <Logo bare size="small" variant="default" />}
+        </div>
       </div>
-      
-      {/* User Section */}
-      <div className={`py-4 px-4 border-b border-gray-100 ${!expanded && 'flex justify-center'}`}>
+
+      {/* User area */}
+      <div className={`py-4 px-4 border-b border-gray-100 ${!expanded ? 'flex justify-center' : ''}`}>
         {expanded ? (
           <div className="flex items-center">
             <UserAvatar name="John Doe" size="md" status="online" />
@@ -157,26 +135,16 @@ const Sidebar = ({ userRole = 'student' }) => {
           <UserAvatar name="John Doe" size="md" status="online" />
         )}
       </div>
-      
-      {/* Navigation Menu */}
+
+      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-3">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
-            
             return (
               <li key={item.id}>
-                <Link
-                  href={item.href}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
-                    ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'}
-                    ${!expanded && 'justify-center'}
-                  `}
-                >
-                  <span className="flex-shrink-0">
-                    {getIcon(item.icon)}
-                  </span>
+                <Link href={item.href} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'} ${!expanded ? 'justify-center' : ''}`}>
+                  <span className="flex-shrink-0">{getIcon(item.icon)}</span>
                   {expanded && <span>{item.label}</span>}
                 </Link>
               </li>
@@ -184,16 +152,10 @@ const Sidebar = ({ userRole = 'student' }) => {
           })}
         </ul>
       </nav>
-      
-      {/* Footer Section */}
+
+      {/* Footer */}
       <div className="p-4 border-t border-gray-100">
-        <Link 
-          href="/login" 
-          className={`
-            flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50
-            ${!expanded && 'justify-center'}
-          `}
-        >
+        <Link href="/login" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 ${!expanded ? 'justify-center' : ''}`}>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
