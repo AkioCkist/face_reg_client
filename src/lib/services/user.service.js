@@ -132,6 +132,54 @@ class UserService {
       throw new Error('Failed to delete user');
     }
   }
+
+  async createUser(userData) {
+    try {
+      const token = localStorage.getItem('authToken');
+      
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(userData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create user');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Create user error:', error);
+      throw new Error('Failed to create user');
+    }
+  }
+
+  async updateUser(userId, userData) {
+    try {
+      const token = localStorage.getItem('authToken');
+      
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(userData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update user');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Update user error:', error);
+      throw new Error('Failed to update user');
+    }
+  }
 }
 
 export default new UserService();

@@ -1,38 +1,120 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { PageHeader, Card, StatCard, TabNavigation } from '../../components/ui';
-
-export const metadata = {
-  title: 'Admin Dashboard - Face Recognition Attendance System',
-  description: 'System administration and management dashboard',
-};
+import { UserManagementModal, UserListTable } from '../../components/features/admin';
+import UserService from '../../lib/services/user.service';
 
 export default function AdminDashboard() {
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  const handleNewUserClick = () => {
+    setSelectedUser(null);
+    setIsUserModalOpen(true);
+  };
+
+  const handleEditUser = (user) => {
+    setSelectedUser(user);
+    setIsUserModalOpen(true);
+  };
+
+  const handleDeleteUser = async (userId) => {
+    try {
+      await UserService.deleteUser(userId);
+      setRefreshTrigger(prev => prev + 1);
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return Promise.reject(error);
+    }
+  };
+
+  const handleSaveUser = async (userData, action) => {
+    try {
+      if (action === 'create') {
+        await UserService.createUser(userData);
+      } else if (action === 'edit') {
+        await UserService.updateUser(userData.id, userData);
+      }
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Error saving user:', error);
+      throw error;
+    }
+  };
+
+  const tabs = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'chart' },
+    { id: 'users', label: 'User Management', icon: 'users' }
+  ];
   return (
     <DashboardLayout userRole="admin">
       <PageHeader 
         title="Admin Dashboard" 
-        subtitle="System overview and management"
+        subtitle={activeTab === 'dashboard' ? 'System overview and management' : 'Manage users and permissions'}
         actions={
           <div className="flex gap-3">
-            <button className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Generate Report
-            </button>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
-              New User
-            </button>
+            {activeTab === 'users' && (
+              <button 
+                onClick={handleNewUserClick}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                New User
+              </button>
+            )}
+            {activeTab === 'dashboard' && (
+              <button className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Generate Report
+              </button>
+            )}
           </div>
         }
       />
       
-      {/* System Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      {/* Tab Navigation */}
+      <div className="mb-6">
+        <nav className="flex space-x-8">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                activeTab === tab.id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {tab.icon === 'chart' && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              )}
+              {tab.icon === 'users' && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              )}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Dashboard Content */}
+      {activeTab === 'dashboard' && (
+        <div>
+          {/* System Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <StatCard 
           title="Total Users" 
           value="1,254" 
@@ -238,6 +320,27 @@ export default function AdminDashboard() {
           </div>
         </Card>
       </div>
+        </div>
+      )}
+
+      {/* User Management Content */}
+      {activeTab === 'users' && (
+        <div>
+          <UserListTable 
+            onEditUser={handleEditUser}
+            onDeleteUser={handleDeleteUser}
+            refreshTrigger={refreshTrigger}
+          />
+        </div>
+      )}
+
+      {/* User Management Modal */}
+      <UserManagementModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        user={selectedUser}
+        onSave={handleSaveUser}
+      />
     </DashboardLayout>
   );
 }
