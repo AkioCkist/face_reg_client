@@ -2,6 +2,7 @@ import React from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { PageHeader, Card, StatCard, TabNavigation } from '../../components/ui';
 import { WelcomeHeader } from '../../components/features/dashboard';
+import ProtectedRoute from '../../components/ProtectedRoute';
 
 export const metadata = {
   title: 'Student Dashboard - Face Recognition Attendance System',
@@ -10,13 +11,14 @@ export const metadata = {
 
 export default function StudentDashboard() {
   return (
-    <DashboardLayout userRole="student">
-      <PageHeader 
-        title="Student Dashboard" 
-        subtitle="Welcome to your attendance portal. Track your attendance and upcoming classes."
-      />
-      
-      <WelcomeHeader name="Alex Johnson" location="Computer Science, Year 3" />
+    <ProtectedRoute allowedRoles={["student"]}>
+      <DashboardLayout userRole="student">
+        <PageHeader 
+          title="Student Dashboard" 
+          subtitle="Welcome to your attendance portal. Track your attendance and upcoming classes."
+        />
+        
+        <WelcomeHeader name="Alex Johnson" location="Computer Science, Year 3" />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <StatCard 
@@ -180,6 +182,7 @@ export default function StudentDashboard() {
           </div>
         </Card>
       </div>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

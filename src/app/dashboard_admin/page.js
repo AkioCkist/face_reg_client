@@ -1,16 +1,52 @@
-'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { PageHeader, Card, StatCard, TabNavigation } from '../../components/ui';
 import { UserManagementModal, UserListTable } from '../../components/features/admin';
 import UserService from '../../lib/services/user.service';
 
 export default function AdminDashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Client-side route protection
+  useEffect(() => {
+    if (status === 'loading') return; // Still loading
+
+    if (!session) {
+      console.log('No session found, redirecting to unauthorized page');
+      router.push('/unauthorized');
+      return;
+    }
+
+    if (session.user.role !== 'admin') {
+      console.log('Access denied: User role is', session.user.role, 'but admin required');
+      router.push('/unauthorized');
+      return;
+    }
+  }, [session, status, router]);
+
+  // Show loading screen while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not authenticated or not admin
+  if (!session || session.user.role !== 'admin') {
+    return null;
+  }
 
   const handleNewUserClick = () => {
     setSelectedUser(null);

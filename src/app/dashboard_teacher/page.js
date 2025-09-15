@@ -2,6 +2,7 @@ import React from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { PageHeader, Card, StatCard, TabNavigation } from '../../components/ui';
 import { WelcomeHeader } from '../../components/features/dashboard';
+import ProtectedRoute from '../../components/ProtectedRoute';
 
 // Components for the teacher dashboard
 import ClassesOverview from '../../components/features/attendance/ClassesOverview';
@@ -15,21 +16,22 @@ export const metadata = {
 
 export default function TeacherDashboard() {
   return (
-    <DashboardLayout userRole="teacher">
-      <PageHeader 
-        title="Teacher Dashboard" 
-        subtitle="Welcome back! Here's what's happening with your classes today."
-        actions={
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-            Start New Session
-          </button>
-        }
-      />
-      
-      <WelcomeHeader name="Dr. Jennifer Wilkins" location="Computer Science Department" />
+    <ProtectedRoute allowedRoles={["teacher"]}>
+      <DashboardLayout userRole="teacher">
+        <PageHeader 
+          title="Teacher Dashboard" 
+          subtitle="Welcome back! Here's what's happening with your classes today."
+          actions={
+            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Start New Session
+            </button>
+          }
+        />
+        
+        <WelcomeHeader name="Dr. Jennifer Wilkins" location="Computer Science Department" />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <StatCard 
@@ -197,6 +199,7 @@ export default function TeacherDashboard() {
           </div>
         </Card>
       </div>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

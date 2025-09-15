@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { signIn } from 'next-auth/react';
 import { Button, Input, Checkbox, Divider, SocialButton } from '../../ui';
 
 const LoginForm = () => {
@@ -29,35 +29,29 @@ const LoginForm = () => {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: formData.userId,
-          password: formData.password
-        }),
+      const result = await signIn('credentials', {
+        userId: formData.userId,
+        password: formData.password,
+        redirect: false,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store user data in localStorage or session
-        localStorage.setItem('user', JSON.stringify(data.user));
+      if (result?.error) {
+        setError('Invalid credentials. Please try again.');
+      } else if (result?.ok) {
+        // NextAuth handles the session, redirect based on role
+        // We'll need to get the session to check the role
+        const response = await fetch('/api/auth/session');
+        const session = await response.json();
         
-        // Redirect based on role
-        if (data.user.role === 'student') {
+        if (session?.user?.role === 'student') {
           router.push('/dashboard_student');
-        } else if (data.user.role === 'teacher') {
+        } else if (session?.user?.role === 'teacher') {
           router.push('/dashboard_teacher');
-        } else if (data.user.role === 'admin') {
+        } else if (session?.user?.role === 'admin') {
           router.push('/dashboard_admin');
         } else {
           router.push('/dashboard');
         }
-      } else {
-        setError(data.error || 'Login failed');
       }
     } catch (error) {
       setError('Network error. Please try again.');
