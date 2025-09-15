@@ -68,8 +68,8 @@ export default function UnauthorizedPage() {
           </p>
 
           {/* Action Buttons */}
-          <div className="space-y-4">
-            <Link href="/login" className="w-full">
+          <div className="space-y-6">
+            <Link href="/login" className="block w-full">
               <Button
                 variant="primary"
                 size="large"
@@ -79,7 +79,7 @@ export default function UnauthorizedPage() {
               </Button>
             </Link>
             
-            <Link href="/" className="w-full">
+            <Link href="/" className="block w-full">
               <Button
                 variant="outline"
                 size="large"
