@@ -1,4 +1,5 @@
 import pkg from 'pg';
+import bcrypt from 'bcryptjs';
 const { Pool } = pkg;
 
 // Database configuration for PostgreSQL
@@ -76,14 +77,22 @@ class Database {
 
   // User authentication methods - updated for accounts table
   static async authenticateUser(userId, password) {
-    const query = 'SELECT id, password, role FROM account WHERE id = $1';
-    const users = await this.select(query, [userId]);
-    
-    if (users.length > 0 && users[0].password === password) {
-      const { password: _, ...userWithoutPassword } = users[0];
+    try {
+      const query = 'SELECT id, password, role FROM account WHERE id = $1';
+      const users = await this.select(query, [userId]);
+
+      if (users.length === 0) return null;
+
+      const userRow = users[0];
+      const isMatch = await bcrypt.compare(password, userRow.password);
+      if (!isMatch) return null;
+
+      const { password: _, ...userWithoutPassword } = userRow;
       return userWithoutPassword;
+    } catch (err) {
+      console.error('Authenticate user error:', err);
+      return null;
     }
-    return null;
   }
 
   // Get user profile by ID

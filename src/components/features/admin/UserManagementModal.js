@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Input } from '../../ui';
+import { Button, Input } from '../../';
 
 const UserManagementModal = ({ isOpen, onClose, user = null, onSave }) => {
   const [formData, setFormData] = useState({
@@ -176,7 +176,7 @@ const UserManagementModal = ({ isOpen, onClose, user = null, onSave }) => {
               name="role"
               value={formData.role}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-medium"
             >
               <option value="student">Student</option>
               <option value="teacher">Teacher</option>

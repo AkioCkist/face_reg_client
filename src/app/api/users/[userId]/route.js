@@ -5,7 +5,7 @@ import Database from '../../../../lib/database';
 // GET /api/users/[userId] - Get user by ID
 export async function GET(request, { params }) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     
     const user = await Database.getUserById(userId);
     
@@ -35,7 +35,7 @@ export async function GET(request, { params }) {
 // PATCH /api/users/[userId] - Update user
 export async function PATCH(request, { params }) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     const updateData = await request.json();
     
     const existingUser = await Database.getUserById(userId);
@@ -81,7 +81,7 @@ export async function PATCH(request, { params }) {
 // DELETE /api/users/[userId] - Delete user
 export async function DELETE(request, { params }) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     
     const existingUser = await Database.getUserById(userId);
     
