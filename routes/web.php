@@ -1,27 +1,55 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
+use App\Enums\UserRole;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    if (auth()->check()) {
+        return redirect('/dashboard');
+    }
+    return redirect()->route('login');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Role-based dashboard redirect
+    Route::get('/dashboard', function () {
+        $user = auth()->user();
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        // Check if user has a valid role
+        if (empty($user->role)) {
+            // Default to student if no role is set
+            \Log::warning('User without role accessing dashboard', ['user_id' => $user->id]);
+            return redirect()->route('student.dashboard');
+        }
+
+        try {
+            $role = UserRole::from($user->role);
+
+            // Redirect based on role:
+            // - admin -> admin.dashboard
+            // - teacher -> teacher.dashboard
+            // - student -> student.dashboard
+            return redirect()->route($role->dashboardRoute());
+        } catch (\ValueError $e) {
+            // If role is invalid, log and default to student
+            \Log::error('Invalid user role', [
+                'user_id' => $user->id,
+                'role' => $user->role,
+            ]);
+            return redirect()->route('student.dashboard');
+        }
+    })->name('dashboard');
 });
 
-require __DIR__.'/auth.php';
+// Include role-based routes
+require __DIR__ . '/admin.php';
+require __DIR__ . '/teacher.php';
+require __DIR__ . '/student.php';
+
+require __DIR__ . '/auth.php';
