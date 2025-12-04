@@ -25,6 +25,7 @@ return [
                 'get' => '/api/v1/faces/{id}',
                 'update' => '/api/v1/faces/{id}',
                 'delete' => '/api/v1/faces/{id}',
+                'delete_by_user' => '/api/v1/faces/user/{user_id}',
                 'search' => '/api/v1/faces/search',
             ],
             'recognition' => [

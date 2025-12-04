@@ -27,34 +27,20 @@
         :data="faces"
         empty-message="No faces registered yet"
       >
-        <template #cell-image="{ row }">
-          <img
-            v-if="row.image_url"
-            :src="row.image_url"
-            :alt="row.name"
-            class="w-12 h-12 rounded-full object-cover"
-          />
-          <div v-else class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-        </template>
-
-        <template #cell-created_at="{ value }">
+        <template #cell-registered_at="{ value }">
           {{ formatDate(value) }}
         </template>
 
         <template #actions="{ row }">
           <div class="flex gap-2">
             <Link
-              :href="`/admin/faces/${row.id}/edit`"
+              :href="`/admin/faces/${row.face_id}/edit`"
               class="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
             >
               Edit
             </Link>
             <button
-              @click="handleDelete(row.id)"
+              @click="handleDelete(row.face_id)"
               class="text-red-600 hover:text-red-900 text-sm font-medium"
             >
               Delete
@@ -70,12 +56,13 @@
 </template>
 
 <script setup>
-import { ref, inject } from 'vue';
+import { ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import DataTable from '@/Components/Common/DataTable.vue';
 import LoadingOverlay from '@/Components/Common/LoadingOverlay.vue';
 import FacesService from '@/services/FacesService';
+import { useToast } from '@/composables/useToast';
 
 const props = defineProps({
   faces: {
@@ -92,14 +79,13 @@ const props = defineProps({
   },
 });
 
-const toast = inject('toast');
+const toast = useToast();
 const isDeleting = ref(false);
 
 const columns = [
-  { key: 'image', label: 'Image', sortable: false },
-  { key: 'name', label: 'Name', sortable: true },
-  { key: 'user_id', label: 'User ID', sortable: true },
-  { key: 'created_at', label: 'Registered', sortable: true },
+  { key: 'face_id', label: 'Face ID', sortable: true },
+  { key: 'account_id', label: 'User ID', sortable: true },
+  { key: 'registered_at', label: 'Registered', sortable: true },
 ];
 
 const formatDate = (dateString) => {

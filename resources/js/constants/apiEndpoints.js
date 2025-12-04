@@ -1,10 +1,18 @@
-// API Endpoints Constants
-// All Laravel route endpoints centralized here
-
 export const API_ENDPOINTS = {
   // Admin - Dashboard
   admin: {
     dashboard: '/admin/dashboard',
+  },
+
+  // Admin - Students
+  students: {
+    index: '/admin/students',
+    create: '/admin/students/create',
+    store: '/admin/students',
+    edit: (id) => `/admin/students/${id}/edit`,
+    update: (id) => `/admin/students/${id}`,
+    destroy: (id) => `/admin/students/${id}`,
+    removeFace: (id) => `/admin/students/${id}/face`,
   },
 
   // Admin - Faces
@@ -16,6 +24,7 @@ export const API_ENDPOINTS = {
     update: (id) => `/admin/faces/${id}`,
     destroy: (id) => `/admin/faces/${id}`,
     search: '/admin/faces/search',
+    searchStudents: '/admin/faces/search-students',
   },
 
   // Teacher - Attendance

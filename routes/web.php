@@ -10,44 +10,46 @@ use App\Enums\UserRole;
 */
 
 Route::get('/', function () {
-    if (auth()->check()) {
-        return redirect('/dashboard');
-    }
-    return redirect()->route('login');
+    return auth()->check()
+        ? redirect('/dashboard')
+        : redirect()->route('login');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Role-based dashboard redirect
-    Route::get('/dashboard', function () {
-        $user = auth()->user();
 
-        // Check if user has a valid role
-        if (empty($user->role)) {
-            // Default to student if no role is set
-            \Log::warning('User without role accessing dashboard', ['user_id' => $user->id]);
+    Route::get('/dashboard', function () {
+
+        $user = auth()->user();
+        $roleValue = $user->role;
+
+        // Handle missing role
+        if (empty($roleValue)) {
+            \Log::warning('User without role', ['user_id' => $user->id]);
             return redirect()->route('student.dashboard');
         }
 
-        try {
-            $role = UserRole::from($user->role);
+        // Safely convert to enum
+        $role = UserRole::tryFrom($roleValue);
 
-            // Redirect based on role:
-            // - admin -> admin.dashboard
-            // - teacher -> teacher.dashboard
-            // - student -> student.dashboard
-            return redirect()->route($role->dashboardRoute());
-        } catch (\ValueError $e) {
-            // If role is invalid, log and default to student
+        if (!$role) {
             \Log::error('Invalid user role', [
                 'user_id' => $user->id,
-                'role' => $user->role,
+                'role' => $roleValue,
             ]);
             return redirect()->route('student.dashboard');
         }
+
+        // Ensure enum has dashboardRoute method
+        if (!method_exists($role, 'dashboardRoute')) {
+            \Log::error('Enum missing dashboardRoute()');
+            return redirect()->route('student.dashboard');
+        }
+
+        return redirect()->route($role->dashboardRoute());
     })->name('dashboard');
 });
 
-// Include role-based routes
+// Include role-based route files
 require __DIR__ . '/admin.php';
 require __DIR__ . '/teacher.php';
 require __DIR__ . '/student.php';

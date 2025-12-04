@@ -40,10 +40,10 @@ class FaceService
             }
 
             $payload = [
-                'user_id' => $data['user_id'],
-                'name' => $data['name'] ?? '',
-                'image' => $data['image'],
-                'metadata' => $data['metadata'] ?? [],
+                'account_id' => (string) $data['user_id'],
+                'image_base64' => $data['image'],
+                'use_webcam' => false,
+                'override' => $data['override'] ?? false,
             ];
 
             $response = $this->apiClient->post($endpoint, $payload);
@@ -214,6 +214,110 @@ class FaceService
                 'success' => false,
                 'error' => 'Failed to search faces: ' . $e->getMessage(),
             ];
+        }
+    }
+
+    /**
+     * Get all registered faces
+     * Used for admin student management to show face registration status
+     */
+    public function getAllFaces(): array
+    {
+        try {
+            $endpoint = config('api.fastapi.endpoints.faces.list');
+            $response = $this->apiClient->get($endpoint);
+
+            if ($response['success'] && isset($response['data'])) {
+                return [
+                    'success' => true,
+                    'data' => $response['data'],
+                ];
+            }
+
+            return [
+                'success' => false,
+                'data' => [],
+            ];
+        } catch (\Exception $e) {
+            Log::error('Failed to get all faces', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'data' => [],
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Remove face by user ID
+     * Deletes face data associated with a specific user
+     */
+    public function removeFaceByUserId(string $userId): array
+    {
+        try {
+            $endpoint = $this->apiClient->buildEndpoint(
+                config('api.fastapi.endpoints.faces.delete_by_user'),
+                ['user_id' => $userId]
+            );
+
+            $response = $this->apiClient->delete($endpoint);
+
+            if ($response['success']) {
+                Log::info('Face removed successfully for user', [
+                    'user_id' => $userId,
+                ]);
+            }
+
+            return $response;
+        } catch (\Exception $e) {
+            Log::error('Face removal failed', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Failed to remove face: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Get faces for multiple user IDs
+     * Returns a mapping of user_id => face_data
+     */
+    public function getFacesByUserIds(array $userIds): array
+    {
+        try {
+            $allFaces = $this->getAllFaces();
+
+            if (!$allFaces['success']) {
+                return [];
+            }
+
+            $faceMap = [];
+            foreach ($allFaces['data'] as $face) {
+                $faceUserId = $face['user_id'] ?? $face['account_id'] ?? null;
+
+                if ($faceUserId && in_array($faceUserId, $userIds)) {
+                    $faceMap[$faceUserId] = [
+                        'face_id' => $face['id'] ?? $face['face_id'] ?? null,
+                        'registered_at' => $face['created_at'] ?? $face['registered_at'] ?? null,
+                        'metadata' => $face['metadata'] ?? [],
+                    ];
+                }
+            }
+
+            return $faceMap;
+        } catch (\Exception $e) {
+            Log::error('Failed to get faces by user IDs', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
         }
     }
 }

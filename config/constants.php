@@ -41,4 +41,28 @@ return [
         'enable_bulk_operations' => env('FEATURE_BULK_OPERATIONS', true),
         'enable_attendance_export' => env('FEATURE_ATTENDANCE_EXPORT', true),
     ],
+
+    'user_management' => [
+        'student_id_prefix' => env('STUDENT_ID_PREFIX', 'STU'),
+        'student_id_length' => env('STUDENT_ID_LENGTH', 8),
+        'default_password_length' => env('DEFAULT_PASSWORD_LENGTH', 12),
+        'require_student_id' => env('REQUIRE_STUDENT_ID', false),
+    ],
+
+    'messages' => [
+        'user' => [
+            'created' => 'User created successfully.',
+            'updated' => 'User updated successfully.',
+            'deleted' => 'User deleted successfully.',
+            'face_removed' => 'Face data removed successfully.',
+            'not_found' => 'User not found.',
+            'cannot_delete_self' => 'You cannot delete your own account.',
+            'face_not_found' => 'No face data found for this user.',
+        ],
+        'validation' => [
+            'role_invalid' => 'The selected role is invalid.',
+            'email_exists' => 'This email is already registered.',
+            'student_id_exists' => 'This student ID is already in use.',
+        ],
+    ],
 ];
