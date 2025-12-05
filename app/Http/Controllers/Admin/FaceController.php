@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\ResponseHelper;
+use App\Helpers\ImageHelper;
+use App\Models\FaceEmbedding;
 use App\Services\FaceRecognition\FaceService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -70,45 +72,48 @@ class FaceController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-            // Log raw request data
-            \Illuminate\Support\Facades\Log::info('Face register request received', [
-                'content_type' => $request->header('Content-Type'),
-                'content_length' => $request->header('Content-Length'),
-                'method' => $request->method(),
-                'all_keys' => array_keys($request->all()),
-                'has_student_id' => $request->has('student_id'),
-                'has_image' => $request->has('image'),
-                'student_id_value' => substr($request->get('student_id', ''), 0, 50),
-                'image_length' => strlen($request->get('image', '')),
-            ]);
-
             $validated = $request->validate([
                 'student_id' => 'required|integer|exists:student_accounts,student_id',
-                'image' => 'required|string',
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240', // max 10MB
             ]);
 
-            // Get the student account to get the database ID
+            // Get the student account
             $student = \App\Models\StudentAccount::where('student_id', $validated['student_id'])->first();
 
             if (!$student) {
                 return ResponseHelper::error('Student account not found', 404);
             }
 
+            // Convert uploaded image to base64
+            $imageFile = $request->file('image');
+            $imageData = file_get_contents($imageFile->getRealPath());
+            $mimeType = $imageFile->getMimeType();
+            $imageBase64 = 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+
+            // Register face via FastAPI
             $faceData = [
-                'user_id' => $student->id, // Use the database ID for face service
-                'student_id' => $validated['student_id'], // Include student ID in metadata
-                'name' => $student->name,
-                'image' => $validated['image'],
-                'metadata' => [
-                    'student_id' => $validated['student_id'],
-                    'email' => $student->email,
-                    'department' => $student->department,
-                ]
+                'account_id' => (string) $validated['student_id'],
+                'image_base64' => $imageBase64,
+                'use_webcam' => false,
+                'override' => false,
             ];
 
             $result = $this->faceService->registerFace($faceData);
 
             if ($result['success']) {
+                // Get embedding from response
+                $embedding = $result['data']['embedding'] ?? null;
+
+                // Store in face_embeddings table with student_id as the ID
+                if ($embedding) {
+                    FaceEmbedding::updateOrCreate(
+                        ['id' => (string) $validated['student_id']],
+                        [
+                            'embedding' => $embedding,
+                        ]
+                    );
+                }
+
                 return ResponseHelper::created(
                     $result['data'],
                     'Face registered successfully'
@@ -119,10 +124,6 @@ class FaceController extends Controller
                 $result['error'] ?? 'Failed to register face'
             );
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Illuminate\Support\Facades\Log::error('Validation error in face registration', [
-                'errors' => $e->errors(),
-                'request_data' => array_keys($request->all()),
-            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
@@ -131,7 +132,6 @@ class FaceController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Face registration error', [
                 'error' => $e->getMessage(),
-                'student_id' => $request->get('student_id'),
             ]);
             return response()->json([
                 'success' => false,

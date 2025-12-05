@@ -30,15 +30,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::delete('/{user}/face', [StudentController::class, 'removeFace'])->name('removeFace');
     });
 
-    // Face Management
-    Route::prefix('faces')->name('faces.')->group(function () {
-        Route::get('/', [FaceController::class, 'index'])->name('index');
-        Route::get('/create', [FaceController::class, 'create'])->name('create');
-        Route::post('/', [FaceController::class, 'store'])->name('store');
-        Route::get('/{id}/edit', [FaceController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [FaceController::class, 'update'])->name('update');
-        Route::delete('/{id}', [FaceController::class, 'destroy'])->name('destroy');
+    // Face Management API endpoints (kept for potential API usage)
+    Route::prefix('api/faces')->name('api.faces.')->group(function () {
         Route::get('/search', [FaceController::class, 'search'])->name('search');
         Route::get('/search-students', [FaceController::class, 'searchStudents'])->name('searchStudents');
     });
+
+    // Note: Face CRUD operations are now handled by Filament admin panel at /admin/faces
 });

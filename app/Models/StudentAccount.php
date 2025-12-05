@@ -22,6 +22,7 @@ class StudentAccount extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'academic_year' => 'integer',
+        'student_id' => 'integer',
     ];
 
     /**

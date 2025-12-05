@@ -101,6 +101,19 @@ class ImageHelper
     }
 
     /**
+     * Check if a string is valid base64
+     */
+    public static function isBase64(string $string): bool
+    {
+        // Remove data URI prefix if present
+        $string = preg_replace('/^data:image\/\w+;base64,/', '', $string);
+        
+        // Check if it's valid base64
+        return base64_decode($string, true) !== false;
+    }
+    }
+
+    /**
      * Generate unique filename for image
      */
     public static function generateFilename(string $extension = 'jpg'): string
