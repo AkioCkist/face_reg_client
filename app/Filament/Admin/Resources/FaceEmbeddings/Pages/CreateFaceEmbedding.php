@@ -7,6 +7,7 @@ use App\Models\FaceEmbedding;
 use App\Models\StudentAccount;
 use App\Services\FaceRecognition\FaceService;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
 class CreateFaceEmbedding extends CreateRecord
@@ -125,10 +126,32 @@ class CreateFaceEmbedding extends CreateRecord
             'student_id' => $data['id'],
         ]);
 
+        // Prevent duplicate embeddings for the same id
+        $existing = FaceEmbedding::where('id', $data['id'])->first();
+        if ($existing) {
+            Log::warning('FaceEmbedding already exists, ignoring creation', ['id' => $data['id']]);
+            return $existing;
+        }
+
+        // Create and save a FaceEmbedding record (id is primary, auto-increment or provided, embedding is required)
+        $embedding = new FaceEmbedding();
+        $embedding->id = $data['id'];
+        $embedding->embedding = $response['embedding'] ?? null;
+        $embedding->save();
+
+        return $embedding;
+    }
+
+    protected function afterCreate(): void
+    {
+        // Show success notification
+        Notification::make()
+            ->success()
+            ->title('Face Registration Successful')
+            ->body('The face has been registered successfully.')
+            ->send();
+
         // Redirect to the face embeddings list page
-        $this->redirect('/admin/face-embeddings');
-        
-        // Return null since we're redirecting instead of creating a record
-        return null;
+        $this->redirect(route('filament.admin.resources.face-embeddings.index'));
     }
 }
