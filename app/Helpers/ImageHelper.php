@@ -111,7 +111,6 @@ class ImageHelper
         // Check if it's valid base64
         return base64_decode($string, true) !== false;
     }
-    }
 
     /**
      * Generate unique filename for image

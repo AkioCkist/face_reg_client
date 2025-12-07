@@ -36,6 +36,7 @@ class FaceEmbeddingForm
                     ->maxSize(10240)
                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif'])
                     ->required()
+                    ->storeFiles(false)
                     ->helperText('Upload JPEG, PNG, or GIF image (max 10MB)'),
                 Textarea::make('embedding')
                     ->disabled()

@@ -46,19 +46,38 @@ class FaceService
                 'override' => $data['override'] ?? false,
             ];
 
+            Log::info('Sending face registration request to FastAPI', [
+                'endpoint' => $endpoint,
+                'account_id' => $payload['account_id'],
+                'base_url' => config('api.fastapi.base_url'),
+            ]);
+
             $response = $this->apiClient->post($endpoint, $payload);
+
+            Log::info('Face registration response received', [
+                'success' => $response['success'],
+                'status_code' => $response['status_code'] ?? null,
+                'has_embedding' => isset($response['data']['embedding']),
+            ]);
 
             if ($response['success']) {
                 Log::info('Face registered successfully', [
                     'user_id' => $data['user_id'],
+                    'response_data' => $response['data'],
+                ]);
+            } else {
+                Log::error('Face registration failed from API', [
+                    'user_id' => $data['user_id'],
+                    'error' => $response['error'] ?? 'Unknown error',
                 ]);
             }
 
             return $response;
         } catch (\Exception $e) {
-            Log::error('Face registration failed', [
+            Log::error('Face registration exception', [
                 'error' => $e->getMessage(),
                 'user_id' => $data['user_id'] ?? null,
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [
