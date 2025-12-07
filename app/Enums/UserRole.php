@@ -74,7 +74,7 @@ enum UserRole: string
     public function dashboardRoute(): string
     {
         return match ($this) {
-            self::ADMIN => 'admin.dashboard',
+            self::ADMIN => 'filament.admin.pages.dashboard',
             self::TEACHER => 'teacher.dashboard',
             self::STUDENT => 'student.dashboard',
         };
