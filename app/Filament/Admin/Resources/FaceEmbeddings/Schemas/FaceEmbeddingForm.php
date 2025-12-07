@@ -9,6 +9,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Collection;
 
 class FaceEmbeddingForm
 {
@@ -18,11 +19,19 @@ class FaceEmbeddingForm
             ->components([
                 Select::make('id')
                     ->label('Student ID')
-                    ->options(StudentAccount::pluck('student_id', 'student_id')->toArray())
                     ->searchable()
+                    ->getSearchResultsUsing(fn(string $search): array => 
+                        StudentAccount::where('student_id', 'like', "%{$search}%")
+                            ->limit(50)
+                            ->pluck('student_id', 'student_id')
+                            ->toArray()
+                    )
+                    ->getOptionLabelUsing(fn($value): ?string => 
+                        StudentAccount::where('student_id', $value)->value('student_id')
+                    )
                     ->required()
                     ->live()
-                    ->helperText('Select a student to auto-fill the Face ID'),
+                    ->helperText('Search for a student by ID'),
                 TextInput::make('face_id')
                     ->label('Face ID')
                     ->disabled()
