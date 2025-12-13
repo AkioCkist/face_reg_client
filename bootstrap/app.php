@@ -19,6 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register middleware aliases
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
+            'ensure.teacher' => \App\Http\Middleware\EnsureTeacher::class,
+            'ensure.student' => \App\Http\Middleware\EnsureStudent::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

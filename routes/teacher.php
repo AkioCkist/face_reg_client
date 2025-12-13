@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Teacher\ClassController;
 use App\Http\Controllers\Teacher\AttendanceController;
+use App\Http\Controllers\Teacher\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -12,19 +14,19 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
-
+Route::middleware(['auth', 'verified', 'ensure.teacher'])->prefix('teacher')->name('teacher.')->group(function () {
+    
     // Dashboard
-    Route::get('/dashboard', function () {
-        return inertia('Teacher/Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Classes Management
+    Route::resource('classes', ClassController::class);
+    Route::post('classes/{class}/students', [ClassController::class, 'addStudent'])->name('classes.add-student');
+    Route::delete('classes/{class}/students/{student}', [ClassController::class, 'removeStudent'])->name('classes.remove-student');
 
     // Attendance Management
-    Route::prefix('attendance')->name('attendance.')->group(function () {
-        Route::get('/start', [AttendanceController::class, 'start'])->name('start');
-        Route::post('/recognize', [AttendanceController::class, 'recognize'])->name('recognize');
-        Route::get('/history', [AttendanceController::class, 'history'])->name('history');
-        Route::get('/stats', [AttendanceController::class, 'stats'])->name('stats');
-        Route::post('/export', [AttendanceController::class, 'export'])->name('export');
-    });
+    Route::get('classes/{class}/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+    Route::post('attendance/mark', [AttendanceController::class, 'markAttendance'])->name('attendance.mark');
+    Route::post('attendance/face', [AttendanceController::class, 'faceAttendance'])->name('attendance.face');
+    Route::get('classes/{class}/attendance/report', [AttendanceController::class, 'report'])->name('attendance.report');
 });

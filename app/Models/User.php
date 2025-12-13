@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -46,5 +48,50 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Check if user is teacher.
+     */
+    public function isTeacher(): bool
+    {
+        return $this->role === 'teacher';
+    }
+
+    /**
+     * Check if user is student.
+     */
+    public function isStudent(): bool
+    {
+        return $this->role === 'student';
+    }
+
+    /**
+     * Get the classes owned by the teacher.
+     */
+    public function teachingClasses(): HasMany
+    {
+        return $this->hasMany(ClassModel::class, 'teacher_id');
+    }
+
+    /**
+     * Get the classes the student is enrolled in.
+     */
+    public function enrolledClasses(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ClassModel::class,
+            'class_student',
+            'student_id',
+            'class_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Get the attendance records.
+     */
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class, 'student_id');
     }
 }

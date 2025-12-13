@@ -8,7 +8,7 @@
           <p class="mt-2 text-sm text-gray-600">View all attendance sessions</p>
         </div>
         <Link
-          href="/teacher/attendance/start"
+          href="/teacher/classes"
           class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
         >
           Take Attendance

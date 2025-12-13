@@ -31,7 +31,7 @@ export const API_ENDPOINTS = {
   teacher: {
     dashboard: '/teacher/dashboard',
     attendance: {
-      start: '/teacher/attendance/start',
+      start: '/teacher/classes/1/attendance',
       recognize: '/teacher/attendance/recognize',
       history: '/teacher/attendance/history',
       stats: '/teacher/attendance/stats',

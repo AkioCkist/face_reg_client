@@ -99,8 +99,8 @@ const navigationItems = computed(() => {
   if (role === USER_ROLES.TEACHER) {
     return [
       { name: 'Dashboard', href: '/teacher/dashboard' },
-      { name: 'Take Attendance', href: '/teacher/attendance/start' },
-      { name: 'History', href: '/teacher/attendance/history' },
+      { name: 'Classes', href: '/teacher/classes' },
+      { name: 'Attendance', href: '/teacher/classes/1/attendance' },
     ];
   }
   

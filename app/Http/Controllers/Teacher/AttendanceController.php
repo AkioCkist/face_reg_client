@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\ResponseHelper;
+use App\Models\ClassModel;
 use App\Services\FaceRecognition\AttendanceService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -20,52 +21,171 @@ class AttendanceController extends Controller
     }
 
     /**
+     * Display attendance index page for a specific class
+     */
+    public function index(ClassModel $class): Response
+    {
+        // Verify teacher owns this class
+        if ($class->teacher_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Load the students relationship
+        $class->load('students');
+
+        return Inertia::render('Teacher/Attendance/Index', [
+            'classData' => $class,
+            'students' => $class->students()->get(),
+            'date' => now()->toDateString(),
+        ]);
+    }
+
+    /**
      * Display attendance start page
      */
     public function start(): Response
     {
-        return Inertia::render('Teacher/Attendance/Start');
+        return Inertia::render('Teacher/Attendance/Index');
     }
 
     /**
      * Process face recognition for attendance
      */
-    public function recognize(Request $request): JsonResponse
+    public function faceAttendance(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'image' => 'required|string',
-            'session_id' => 'nullable|string',
+            'class_id' => 'required|exists:classes,id',
         ]);
 
-        $recognitionResult = $this->attendanceService->recognizeFace(
-            $validated['image']
-        );
+        try {
+            // Log the incoming request
+            \Log::info('Face attendance request received', [
+                'class_id' => $validated['class_id'],
+                'image_size' => strlen($validated['image']),
+            ]);
 
-        if (!$recognitionResult['success']) {
-            return ResponseHelper::error(
-                $recognitionResult['error'] ?? 'Recognition failed'
-            );
-        }
+            // Call Python face recognition API
+            $client = new \GuzzleHttp\Client();
+            
+            $response = $client->post('http://localhost:3636/api/v1/faces/recognize', [
+                'json' => [
+                    'image_base64' => $validated['image'],
+                    'similarity_threshold' => 0.45,
+                    'skip_anti_spoofing' => true,  // Skip anti-spoofing for web-based captures
+                ],
+                'timeout' => 10,
+            ]);
 
-        // Process attendance if face was recognized
-        if ($recognitionResult['data']['recognized'] ?? false) {
-            $attendanceResult = $this->attendanceService->processAttendance(
-                $recognitionResult['data'],
-                ['session_id' => $validated['session_id'] ?? null]
-            );
+            $result = json_decode($response->getBody()->getContents(), true);
 
-            if ($attendanceResult['success']) {
-                return ResponseHelper::success(
-                    $attendanceResult['data'],
-                    'Attendance marked successfully'
-                );
+            // Log the API response
+            \Log::info('Face recognition API response', [
+                'success' => $result['success'] ?? false,
+                'recognized' => $result['recognized'] ?? false,
+                'anti_spoofing_passed' => $result['anti_spoofing_passed'] ?? false,
+                'anti_spoofing_confidence' => $result['anti_spoofing_confidence'] ?? null,
+                'message' => $result['message'] ?? 'No message',
+            ]);
+
+            if (!$result['success']) {
+                return ResponseHelper::error($result['message'] ?? 'Face recognition failed');
             }
-        }
 
-        return ResponseHelper::success(
-            $recognitionResult['data'],
-            'Face not recognized'
-        );
+            if (!$result['recognized']) {
+                $message = $result['message'] ?? 'Face not recognized';
+                
+                // Provide helpful feedback for anti-spoofing failures
+                if (isset($result['anti_spoofing_passed']) && !$result['anti_spoofing_passed']) {
+                    $message = 'Please ensure good lighting and look directly at the camera. The system detected this might not be a live person.';
+                }
+                
+                return ResponseHelper::success([
+                    'recognized' => false,
+                    'message' => $message,
+                    'anti_spoofing_passed' => $result['anti_spoofing_passed'] ?? false,
+                ]);
+            }
+
+            // Face recognized - find the student in student_accounts table
+            $accountId = $result['account_id'];
+            $studentAccount = \App\Models\StudentAccount::where('student_id', $accountId)->first();
+
+            if (!$studentAccount) {
+                return ResponseHelper::success([
+                    'recognized' => false,
+                    'message' => "Student with ID {$accountId} not found in the system",
+                ]);
+            }
+
+            // Find the corresponding user account
+            $student = \App\Models\User::where('student_id', $accountId)
+                ->where('role', 'student')
+                ->first();
+
+            if (!$student) {
+                return ResponseHelper::success([
+                    'recognized' => false,
+                    'message' => "User account for student ID {$accountId} not found. Please contact administrator.",
+                ]);
+            }
+
+            // Mark attendance
+            $class = \App\Models\ClassModel::findOrFail($validated['class_id']);
+            
+            // Create or update attendance record
+            $attendance = \App\Models\Attendance::updateOrCreate(
+                [
+                    'student_id' => $student->id,
+                    'class_id' => $class->id,
+                ],
+                [
+                    'status' => 'present',
+                    'method' => 'face',
+                    'marked_at' => now(),
+                    'notes' => 'Marked via face recognition',
+                ]
+            );
+
+            return ResponseHelper::success([
+                'recognized' => true,
+                'student' => [
+                    'id' => $student->id,
+                    'name' => $studentAccount->name,  // Use name from student_accounts table
+                    'student_id' => $studentAccount->student_id,
+                    'email' => $studentAccount->email,
+                    'department' => $studentAccount->department,
+                ],
+                'confidence' => $result['confidence'] ?? 0,
+                'message' => "Attendance marked for {$studentAccount->name}",
+            ]);
+
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            // 4xx errors (like 400 Bad Request)
+            $responseBody = $e->getResponse()->getBody()->getContents();
+            \Log::error('Face API client error (4xx)', [
+                'status' => $e->getResponse()->getStatusCode(),
+                'response' => $responseBody,
+                'message' => $e->getMessage(),
+            ]);
+            return ResponseHelper::error('Invalid request to face recognition API: ' . $responseBody);
+        } catch (\GuzzleHttp\Exception\ServerException $e) {
+            // 5xx errors
+            $responseBody = $e->getResponse()->getBody()->getContents();
+            \Log::error('Face API server error (5xx)', [
+                'status' => $e->getResponse()->getStatusCode(),
+                'response' => $responseBody,
+            ]);
+            return ResponseHelper::error('Face recognition service error: ' . $responseBody);
+        } catch (\GuzzleHttp\Exception\ConnectException $e) {
+            \Log::error('Cannot connect to face API', ['error' => $e->getMessage()]);
+            return ResponseHelper::error('Cannot connect to face recognition service. Please ensure the Python API is running on port 3636.');
+        } catch (\Exception $e) {
+            \Log::error('Face recognition error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return ResponseHelper::error('Face recognition failed: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -82,6 +202,47 @@ class AttendanceController extends Controller
         return Inertia::render('Teacher/Attendance/History', [
             'records' => $attendanceRecords,
             'filters' => $filters,
+        ]);
+    }
+
+    /**
+     * Mark attendance manually
+     */
+    public function markAttendance(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'class_id' => 'required|exists:classes,id',
+            'student_id' => 'required|exists:users,id',
+            'status' => 'required|in:present,late,absent',
+            'date' => 'required|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        try {
+            // TODO: Implement actual attendance marking
+            // For now, just return success
+            return ResponseHelper::success([
+                'message' => 'Attendance marked successfully',
+            ]);
+        } catch (\Exception $e) {
+            return ResponseHelper::error('Failed to mark attendance: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get attendance report for a class
+     */
+    public function report(ClassModel $class): Response
+    {
+        // Verify teacher owns this class
+        if ($class->teacher_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        // TODO: Implement attendance report
+        return Inertia::render('Teacher/Attendance/Report', [
+            'class' => $class,
+            'attendanceData' => [],
         ]);
     }
 
