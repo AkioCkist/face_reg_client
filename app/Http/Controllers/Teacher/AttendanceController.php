@@ -130,34 +130,19 @@ class AttendanceController extends Controller
                 ]);
             }
 
-            // Mark attendance
-            $class = \App\Models\ClassModel::findOrFail($validated['class_id']);
-            
-            // Create or update attendance record
-            $attendance = \App\Models\Attendance::updateOrCreate(
-                [
-                    'student_id' => $student->id,
-                    'class_id' => $class->id,
-                ],
-                [
-                    'status' => 'present',
-                    'method' => 'face',
-                    'marked_at' => now(),
-                    'notes' => 'Marked via face recognition',
-                ]
-            );
-
+            // Return student info without saving to database yet
+            // The frontend will collect all students and save in a batch
             return ResponseHelper::success([
                 'recognized' => true,
                 'student' => [
                     'id' => $student->id,
-                    'name' => $studentAccount->name,  // Use name from student_accounts table
+                    'name' => $studentAccount->name,
                     'student_id' => $studentAccount->student_id,
                     'email' => $studentAccount->email,
                     'department' => $studentAccount->department,
                 ],
                 'confidence' => $result['confidence'] ?? 0,
-                'message' => "Attendance marked for {$studentAccount->name}",
+                'message' => "Student recognized: {$studentAccount->name}",
             ]);
 
         } catch (\GuzzleHttp\Exception\ClientException $e) {
@@ -206,7 +191,103 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Mark attendance manually
+     * Show review page for attendance session
+     */
+    public function review(ClassModel $class, Request $request): Response
+    {
+        // Verify teacher owns this class
+        if ($class->teacher_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        $validated = $request->validate([
+            'scanned_students' => 'required|array',
+            'scanned_students.*.student_id' => 'required|exists:users,id',
+            'scanned_students.*.student_name' => 'required|string',
+            'scanned_students.*.student_email' => 'required|email',
+            'scanned_students.*.status' => 'required|in:present,late,absent',
+            'scanned_students.*.method' => 'required|string',
+            'scanned_students.*.confidence' => 'nullable|numeric',
+            'scanned_students.*.notes' => 'nullable|string',
+            'date' => 'required|date',
+        ]);
+
+        // Load all students in the class
+        $allStudents = $class->students()->get();
+
+        return Inertia::render('Teacher/Attendance/Review', [
+            'classData' => $class,
+            'scannedStudents' => $validated['scanned_students'],
+            'allStudents' => $allStudents,
+            'date' => $validated['date'],
+        ]);
+    }
+
+    /**
+     * Save attendance session
+     */
+    public function saveSession(ClassModel $class, Request $request): \Illuminate\Http\RedirectResponse
+    {
+        // Verify teacher owns this class
+        if ($class->teacher_id !== auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'attendance_records' => 'required|array',
+            'attendance_records.*.student_id' => 'required|exists:users,id',
+            'attendance_records.*.status' => 'required|in:present,late,absent',
+            'attendance_records.*.method' => 'required|string',
+            'attendance_records.*.confidence' => 'nullable|numeric',
+            'attendance_records.*.notes' => 'nullable|string',
+        ]);
+
+        try {
+            \DB::beginTransaction();
+
+            $date = $validated['date'];
+            $savedCount = 0;
+
+            foreach ($validated['attendance_records'] as $record) {
+                // Create or update attendance record
+                \App\Models\Attendance::updateOrCreate(
+                    [
+                        'student_id' => $record['student_id'],
+                        'class_id' => $class->id,
+                        'date' => $date,
+                    ],
+                    [
+                        'status' => $record['status'],
+                        'method' => $record['method'],
+                        'marked_at' => now(),
+                        'notes' => $record['notes'] ?? null,
+                    ]
+                );
+                $savedCount++;
+            }
+
+            \DB::commit();
+
+            return redirect()
+                ->route('teacher.classes.index')
+                ->with('success', "Attendance saved successfully for {$savedCount} student(s)");
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Error saving attendance session', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to save attendance: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Mark attendance manually (single student)
      */
     public function markAttendance(Request $request): JsonResponse
     {
@@ -214,13 +295,32 @@ class AttendanceController extends Controller
             'class_id' => 'required|exists:classes,id',
             'student_id' => 'required|exists:users,id',
             'status' => 'required|in:present,late,absent',
-            'date' => 'required|date',
             'notes' => 'nullable|string',
         ]);
 
         try {
-            // TODO: Implement actual attendance marking
-            // For now, just return success
+            $class = ClassModel::findOrFail($validated['class_id']);
+            
+            // Verify teacher owns this class
+            if ($class->teacher_id !== auth()->id()) {
+                return ResponseHelper::error('Unauthorized', 403);
+            }
+
+            // Create or update attendance record for today
+            \App\Models\Attendance::updateOrCreate(
+                [
+                    'student_id' => $validated['student_id'],
+                    'class_id' => $validated['class_id'],
+                    'date' => now()->toDateString(),
+                ],
+                [
+                    'status' => $validated['status'],
+                    'method' => 'manual',
+                    'marked_at' => now(),
+                    'notes' => $validated['notes'] ?? null,
+                ]
+            );
+
             return ResponseHelper::success([
                 'message' => 'Attendance marked successfully',
             ]);

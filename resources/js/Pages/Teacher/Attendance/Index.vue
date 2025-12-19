@@ -221,19 +221,37 @@ const captureImage = async () => {
     const imageDataUrl = canvas.toDataURL('image/jpeg', 0.95);
     const imageData = imageDataUrl.replace(/^data:image\/jpeg;base64,/, '');
 
+    // Get CSRF token from meta tag or Inertia props
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || page.props.csrf_token;
+    
+    if (!csrfToken) {
+      recognitionError.value = 'Security token not found. Please refresh the page.';
+      isProcessing.value = false;
+      return;
+    }
+
     // Call face recognition API
-    const csrfToken = page.props._token || document.querySelector('meta[name="csrf-token"]')?.content;
     const response = await fetch(route('teacher.attendance.face'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-TOKEN': csrfToken,
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
         class_id: class_data.id,
         image: imageData,
       }),
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Response status:', response.status);
+      console.error('Response body:', errorText);
+      recognitionError.value = `Server error: ${response.status}`;
+      isProcessing.value = false;
+      return;
+    }
 
     const data = await response.json();
 

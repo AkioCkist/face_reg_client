@@ -19,6 +19,7 @@ class Attendance extends Model
     protected $fillable = [
         'class_id',
         'student_id',
+        'date',
         'status',
         'method',
         'marked_at',
@@ -33,6 +34,7 @@ class Attendance extends Model
     protected function casts(): array
     {
         return [
+            'date' => 'date',
             'marked_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

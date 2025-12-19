@@ -49,6 +49,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
+// API Routes
+Route::get('/api/students/search', [\App\Http\Controllers\Api\StudentSearchController::class, 'search'])->middleware('auth')->name('api.students.search');
+
 // Include role-based route files
 require __DIR__ . '/admin.php';
 require __DIR__ . '/teacher.php';

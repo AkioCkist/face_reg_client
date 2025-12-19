@@ -43,25 +43,33 @@
               {{ classItem.start_time ? `${classItem.start_time}-${classItem.end_time}` : '' }}
             </td>
             <td class="px-6 py-4 text-gray-600">{{ classItem.students_count }}</td>
-            <td class="px-6 py-4 flex gap-2">
-              <Link
-                :href="route('teacher.classes.show', classItem.id)"
-                class="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
-              >
-                View
-              </Link>
-              <Link
-                :href="route('teacher.classes.edit', classItem.id)"
-                class="text-amber-600 hover:text-amber-900 font-medium text-sm"
-              >
-                Edit
-              </Link>
-              <button
-                @click="deleteClass(classItem.id)"
-                class="text-red-600 hover:text-red-900 font-medium text-sm"
-              >
-                Delete
-              </button>
+            <td class="px-6 py-4">
+              <div class="flex gap-2 flex-wrap">
+                <Link
+                  :href="route('teacher.attendance.index', classItem.id)"
+                  class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 font-medium text-sm"
+                >
+                  Start Attendance
+                </Link>
+                <Link
+                  :href="route('teacher.classes.show', classItem.id)"
+                  class="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
+                >
+                  View
+                </Link>
+                <Link
+                  :href="route('teacher.classes.edit', classItem.id)"
+                  class="text-amber-600 hover:text-amber-900 font-medium text-sm"
+                >
+                  Edit
+                </Link>
+                <button
+                  @click="deleteClass(classItem.id)"
+                  class="text-red-600 hover:text-red-900 font-medium text-sm"
+                >
+                  Delete
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>

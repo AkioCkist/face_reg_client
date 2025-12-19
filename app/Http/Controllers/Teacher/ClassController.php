@@ -74,7 +74,19 @@ class ClassController extends Controller
         }
 
         return Inertia::render('Teacher/Classes/Edit', [
-            'class' => new ClassResource($class),
+            'classData' => new ClassResource($class),
+            'students' => $class->students()
+                ->select('users.id', 'users.name', 'users.email', 'users.student_id')
+                ->get()
+                ->map(function ($user) {
+                    $studentAccount = \App\Models\StudentAccount::where('student_id', $user->student_id)->first();
+                    return [
+                        'id' => $user->id,
+                        'name' => $studentAccount?->name ?? $user->name,
+                        'email' => $studentAccount?->email ?? $user->email,
+                        'student_id' => $user->student_id,
+                    ];
+                }),
         ]);
     }
 
@@ -141,35 +153,72 @@ class ClassController extends Controller
             abort(403, 'Unauthorized to add students to this class');
         }
 
-        $studentId = request()->validate([
-            'student_id' => 'required|exists:users,id',
-        ])['student_id'];
+        try {
+            $studentAccountId = request()->validate([
+                'student_id' => 'required|exists:student_accounts,id',
+            ])['student_id'];
 
-        $class->students()->attach($studentId);
+            // Get the StudentAccount
+            $studentAccount = \App\Models\StudentAccount::findOrFail($studentAccountId);
 
-        return response()->json([
-            'message' => 'Học sinh đã được thêm vào lớp',
-        ]);
+            // Find the User by student_id
+            $user = \App\Models\User::where('student_id', $studentAccount->student_id)->first();
+
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Không tìm thấy tài khoản người dùng cho học sinh này. StudentAccount ID: ' . $studentAccount->student_id,
+                ], 404);
+            }
+
+            // Check if student is already in the class
+            if ($class->students()->where('users.id', $user->id)->exists()) {
+                return response()->json([
+                    'message' => 'Học sinh này đã có trong lớp',
+                ], 422);
+            }
+
+            // Add student to class
+            $class->students()->attach($user->id);
+
+            return response()->json([
+                'message' => 'Học sinh đã được thêm vào lớp',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error adding student to class: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Lỗi khi thêm học sinh: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
      * Remove student from class.
      */
-    public function removeStudent(ClassModel $class)
+    public function removeStudent(ClassModel $class, $studentId)
     {
         // Check if the authenticated user is the teacher of this class
         if ($class->teacher_id !== Auth::id()) {
             abort(403, 'Unauthorized to remove students from this class');
         }
 
-        $studentId = request()->validate([
-            'student_id' => 'required|exists:users,id',
-        ])['student_id'];
+        // Validate that the student exists
+        if (!\App\Models\User::where('id', $studentId)->exists()) {
+            return response()->json([
+                'message' => 'Học sinh không tồn tại',
+            ], 404);
+        }
 
-        $class->students()->detach($studentId);
+        try {
+            $class->students()->detach($studentId);
 
-        return response()->json([
-            'message' => 'Học sinh đã được xóa khỏi lớp',
-        ]);
+            return response()->json([
+                'message' => 'Học sinh đã được xóa khỏi lớp',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error removing student from class: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Lỗi khi xóa học sinh: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }
