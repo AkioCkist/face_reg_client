@@ -44,13 +44,14 @@
         <table class="w-full">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-6 py-3 text-left text-sm font-semibold">Student</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold">Student ID</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold">Name</th>
               <th class="px-6 py-3 text-left text-sm font-semibold">Email</th>
               <th class="px-6 py-3 text-left text-sm font-semibold">Status</th>
               <th class="px-6 py-3 text-left text-sm font-semibold">Method</th>
               <th class="px-6 py-3 text-left text-sm font-semibold">Confidence</th>
               <th class="px-6 py-3 text-left text-sm font-semibold">Notes</th>
-              <th class="px-6 py-3 text-left text-sm font-semibold">Action</th>
+              <th class="px-6 py-3 text-left text-sm font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y">
@@ -60,21 +61,61 @@
               :class="[
                 'hover:bg-gray-50',
                 record.status === 'present' ? 'bg-green-50' : 
-                record.status === 'absent' ? 'bg-red-50' : 
-                'bg-yellow-50'
+                record.status === 'absent' ? 'bg-red-50' :
+                record.status === 'late' ? 'bg-yellow-50' :
+                'bg-gray-50'
               ]"
             >
+              <td class="px-6 py-4 text-sm font-medium text-gray-600">{{ record.student_id }}</td>
               <td class="px-6 py-4 font-medium">{{ record.student_name }}</td>
               <td class="px-6 py-4 text-gray-600 text-sm">{{ record.student_email }}</td>
               <td class="px-6 py-4">
-                <select
-                  v-model="record.status"
-                  class="px-3 py-1 border border-gray-300 rounded text-sm"
-                >
-                  <option value="present">Có mặt</option>
-                  <option value="late">Trễ</option>
-                  <option value="absent">Vắng</option>
-                </select>
+                <div class="flex gap-1">
+                  <button
+                    @click="record.status = 'unknown'"
+                    :class="[
+                      'px-2 py-1 rounded text-xs font-medium transition',
+                      record.status === 'unknown'
+                        ? 'bg-gray-400 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ]"
+                  >
+                    Unknown
+                  </button>
+                  <button
+                    @click="record.status = 'present'"
+                    :class="[
+                      'px-2 py-1 rounded text-xs font-medium transition',
+                      record.status === 'present'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-green-50 text-green-700 hover:bg-green-100'
+                    ]"
+                  >
+                    Present
+                  </button>
+                  <button
+                    @click="record.status = 'late'"
+                    :class="[
+                      'px-2 py-1 rounded text-xs font-medium transition',
+                      record.status === 'late'
+                        ? 'bg-yellow-600 text-white'
+                        : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+                    ]"
+                  >
+                    Late
+                  </button>
+                  <button
+                    @click="record.status = 'absent'"
+                    :class="[
+                      'px-2 py-1 rounded text-xs font-medium transition',
+                      record.status === 'absent'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-red-50 text-red-700 hover:bg-red-100'
+                    ]"
+                  >
+                    Absent
+                  </button>
+                </div>
               </td>
               <td class="px-6 py-4">
                 <span
@@ -103,14 +144,22 @@
                 />
               </td>
               <td class="px-6 py-4">
-                <button
-                  v-if="record.method === 'auto-absent'"
-                  @click="removeRecord(record.student_id)"
-                  class="text-red-600 hover:text-red-800 text-sm"
-                >
-                  Remove
-                </button>
-                <span v-else class="text-gray-400 text-sm">-</span>
+                <div class="flex gap-2">
+                  <button
+                    @click="resetRecord(record.student_id)"
+                    class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    title="Reset to default status"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    v-if="record.method === 'auto-absent'"
+                    @click="removeRecord(record.student_id)"
+                    class="text-red-600 hover:text-red-800 text-sm font-medium"
+                  >
+                    Remove
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -202,6 +251,17 @@ const removeRecord = (studentId) => {
   if (record && record.method === 'auto-absent') {
     // Don't remove, just change status to prevent saving
     record.excluded = true;
+  }
+};
+
+const resetRecord = (studentId) => {
+  const record = attendanceRecords.value.find(r => r.student_id === studentId);
+  if (record) {
+    // Reset to default absent status
+    record.status = 'absent';
+    record.notes = '';
+    record.method = 'manual';
+    record.confidence = null;
   }
 };
 

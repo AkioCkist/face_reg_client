@@ -2,7 +2,17 @@
   <div class="bg-white rounded-lg shadow-md overflow-hidden">
     <div class="flex justify-between items-center p-6 border-b">
       <h2 class="text-2xl font-bold text-gray-900">Attendance: {{ class_data.name }}</h2>
-      <span class="text-gray-600">{{ formatDate(currentDate) }}</span>
+      <div class="flex items-center gap-4">
+        <span class="text-gray-600">{{ formatDate(currentDate) }}</span>
+        <button
+          v-if="activeTab === 'manual'"
+          @click="saveAllAttendance"
+          :disabled="isSavingAll"
+          class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 font-medium"
+        >
+          {{ isSavingAll ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
     </div>
 
     <div class="p-6">
@@ -38,43 +48,73 @@
           <table class="w-full">
             <thead class="bg-gray-100">
               <tr>
-                <th class="px-6 py-3 text-left text-sm font-semibold">Student</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold">Student ID</th>
+                <th class="px-6 py-3 text-left text-sm font-semibold">Name</th>
                 <th class="px-6 py-3 text-left text-sm font-semibold">Email</th>
                 <th class="px-6 py-3 text-left text-sm font-semibold">Status</th>
                 <th class="px-6 py-3 text-left text-sm font-semibold">Notes</th>
-                <th class="px-6 py-3 text-left text-sm font-semibold">Action</th>
               </tr>
             </thead>
             <tbody class="divide-y">
               <tr v-for="student in students" :key="student.id" class="hover:bg-gray-50">
+                <td class="px-6 py-4 text-sm font-medium text-gray-600">{{ student.student_id }}</td>
                 <td class="px-6 py-4 font-medium">{{ student.name }}</td>
                 <td class="px-6 py-4 text-gray-600">{{ student.email }}</td>
                 <td class="px-6 py-4">
-                  <select
-                    v-model="attendanceForm[student.id].status"
-                    class="px-3 py-1 border border-gray-300 rounded text-sm"
-                  >
-                    <option value="present">Có mặt</option>
-                    <option value="late">Trễ</option>
-                    <option value="absent">Vắng</option>
-                  </select>
+                  <div class="flex gap-1">
+                    <button
+                      @click="attendanceForm[student.id].status = 'unknown'"
+                      :class="[
+                        'px-3 py-1 rounded text-xs font-medium transition',
+                        attendanceForm[student.id].status === 'unknown'
+                          ? 'bg-gray-400 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ]"
+                    >
+                      Unknown
+                    </button>
+                    <button
+                      @click="attendanceForm[student.id].status = 'present'"
+                      :class="[
+                        'px-3 py-1 rounded text-xs font-medium transition',
+                        attendanceForm[student.id].status === 'present'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-green-50 text-green-700 hover:bg-green-100'
+                      ]"
+                    >
+                      Present
+                    </button>
+                    <button
+                      @click="attendanceForm[student.id].status = 'late'"
+                      :class="[
+                        'px-3 py-1 rounded text-xs font-medium transition',
+                        attendanceForm[student.id].status === 'late'
+                          ? 'bg-yellow-600 text-white'
+                          : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+                      ]"
+                    >
+                      Late
+                    </button>
+                    <button
+                      @click="attendanceForm[student.id].status = 'absent'"
+                      :class="[
+                        'px-3 py-1 rounded text-xs font-medium transition',
+                        attendanceForm[student.id].status === 'absent'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-red-50 text-red-700 hover:bg-red-100'
+                      ]"
+                    >
+                      Absent
+                    </button>
+                  </div>
                 </td>
                 <td class="px-6 py-4">
                   <input
                     v-model="attendanceForm[student.id].notes"
                     type="text"
-                    placeholder="Ghi chú..."
+                    placeholder="Add notes..."
                     class="px-3 py-1 border border-gray-300 rounded text-sm w-full"
                   />
-                </td>
-                <td class="px-6 py-4">
-                  <button
-                    @click="submitAttendance(student.id)"
-                    :disabled="submitting[student.id]"
-                    class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-400"
-                  >
-                    {{ submitting[student.id] ? 'Đang...' : 'Lưu' }}
-                  </button>
                 </td>
               </tr>
             </tbody>
@@ -106,7 +146,7 @@
               @click="startCamera"
               class="w-full mt-3 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
             >
-              Bật camera
+              Enable Camera
             </button>
             <button
               v-else
@@ -114,30 +154,30 @@
               :disabled="isProcessing"
               class="w-full mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
             >
-              {{ isProcessing ? 'Đang xử lý...' : 'Chụp ảnh' }}
+              {{ isProcessing ? 'Processing...' : 'Capture Photo' }}
             </button>
           </div>
 
           <!-- Result -->
           <div>
-            <h3 class="text-lg font-semibold mb-3">Kết quả</h3>
+            <h3 class="text-lg font-semibold mb-3">Result</h3>
             <div v-if="recognitionResult" class="space-y-3">
               <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p class="font-semibold text-green-900">✓ Nhận diện thành công</p>
+                <p class="font-semibold text-green-900">✓ Recognition Successful</p>
                 <p class="text-green-800 mt-2">
-                  Học sinh: <span class="font-bold">{{ recognitionResult.student_name }}</span>
+                  Student: <span class="font-bold">{{ recognitionResult.student_name }}</span>
                 </p>
                 <p class="text-sm text-green-700 mt-1">
-                  Độ chính xác: {{ (recognitionResult.confidence * 100).toFixed(2) }}%
+                  Confidence: {{ (recognitionResult.confidence * 100).toFixed(2) }}%
                 </p>
               </div>
             </div>
             <div v-else-if="recognitionError" class="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p class="font-semibold text-red-900">✗ Lỗi</p>
+              <p class="font-semibold text-red-900">✗ Error</p>
               <p class="text-red-800 mt-2">{{ recognitionError }}</p>
             </div>
             <div v-else class="p-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-600">
-              Chụp ảnh để bắt đầu nhận diện
+              Take a photo to start recognition
             </div>
           </div>
         </div>
@@ -166,6 +206,7 @@ const activeTab = ref('manual');
 // Manual attendance
 const attendanceForm = reactive({});
 const submitting = reactive({});
+const isSavingAll = ref(false);
 
 // Face recognition
 const videoRef = ref(null);
@@ -179,8 +220,8 @@ if (props.students && Array.isArray(props.students)) {
   props.students.forEach(student => {
     if (!attendanceForm[student.id]) {
       attendanceForm[student.id] = {
-        status: 'present',
-        notes: '',
+        status: student.status || 'unknown',
+        notes: student.notes || '',
       };
     }
   });
@@ -258,9 +299,21 @@ const captureImage = async () => {
     if (data.success) {
       // Check if student data exists in the response
       if (data.data && data.data.student && data.data.student.name) {
+        const studentId = data.data.student.id;
+        const studentName = data.data.student.name;
+        const confidence = data.data.confidence || 0.95;
+        
+        // Update the attendance form for this student
+        if (attendanceForm[studentId]) {
+          attendanceForm[studentId] = {
+            status: 'present',
+            notes: `Face recognized at ${new Date().toLocaleTimeString()}`,
+          };
+        }
+        
         recognitionResult.value = {
-          student_name: data.data.student.name,
-          confidence: data.data.confidence || 0.95,
+          student_name: studentName,
+          confidence: confidence,
         };
         setTimeout(() => {
           recognitionResult.value = null;
@@ -273,7 +326,7 @@ const captureImage = async () => {
     }
   } catch (error) {
     console.error('Error:', error);
-    recognitionError.value = 'Lỗi trong quá trình nhận diện';
+    recognitionError.value = 'Error during face recognition';
   } finally {
     isProcessing.value = false;
   }
@@ -308,6 +361,48 @@ const submitAttendance = async (studentId) => {
     alert('Error saving attendance');
   } finally {
     submitting[studentId] = false;
+  }
+};
+
+const saveAllAttendance = async () => {
+  try {
+    isSavingAll.value = true;
+    
+    // Collect all attendance records
+    const attendanceRecords = props.students.map(student => ({
+      student_id: student.id,
+      status: attendanceForm[student.id]?.status || 'unknown',
+      method: 'manual',
+      notes: attendanceForm[student.id]?.notes || '',
+    }));
+
+    const response = await fetch(route('teacher.attendance.mark-all'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+      },
+      body: JSON.stringify({
+        class_id: class_data.id,
+        date: currentDate,
+        attendances: attendanceRecords,
+      }),
+    });
+
+    const result = await response.json();
+    
+    if (response.ok && result.success) {
+      alert('Attendance saved successfully!');
+      // Optionally redirect or refresh
+      window.location.reload();
+    } else {
+      alert(result.message || 'Error saving attendance');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error saving attendance: ' + error.message);
+  } finally {
+    isSavingAll.value = false;
   }
 };
 </script>

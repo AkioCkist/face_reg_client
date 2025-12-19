@@ -27,6 +27,7 @@ Route::middleware(['auth', 'verified', 'ensure.teacher'])->prefix('teacher')->na
     // Attendance Management
     Route::get('classes/{class}/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
     Route::post('attendance/mark', [AttendanceController::class, 'markAttendance'])->name('attendance.mark');
+    Route::post('attendance/mark-all', [AttendanceController::class, 'markAllAttendance'])->name('attendance.mark-all');
     Route::post('attendance/face', [AttendanceController::class, 'faceAttendance'])->name('attendance.face');
     Route::post('classes/{class}/attendance/review', [AttendanceController::class, 'review'])->name('attendance.review');
     Route::post('classes/{class}/attendance/save-session', [AttendanceController::class, 'saveSession'])->name('attendance.save-session');

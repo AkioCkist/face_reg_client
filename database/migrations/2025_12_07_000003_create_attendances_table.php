@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
             $table->foreignId('student_id')->constrained('users')->onDelete('cascade');
-            $table->enum('status', ['present', 'late', 'absent']);
+            $table->enum('status', ['unknown', 'present', 'late', 'absent']);
             $table->enum('method', ['manual', 'face']);
             $table->timestamp('marked_at')->nullable();
             $table->text('notes')->nullable();

@@ -161,19 +161,32 @@ class ClassController extends Controller
             // Get the StudentAccount
             $studentAccount = \App\Models\StudentAccount::findOrFail($studentAccountId);
 
-            // Find the User by student_id
-            $user = \App\Models\User::where('student_id', $studentAccount->student_id)->first();
+            // Find or create the User by student_id (the academic student ID)
+            $user = \App\Models\User::where('student_id', $studentAccount->student_id)
+                ->where('role', 'student')
+                ->first();
 
+            // If user doesn't exist, create one automatically
             if (!$user) {
-                return response()->json([
-                    'message' => 'Không tìm thấy tài khoản người dùng cho học sinh này. StudentAccount ID: ' . $studentAccount->student_id,
-                ], 404);
+                $user = \App\Models\User::create([
+                    'name' => $studentAccount->name,
+                    'email' => $studentAccount->email ?? 'student_' . $studentAccount->student_id . '@student.local',
+                    'password' => \Illuminate\Support\Facades\Hash::make('password123'),
+                    'student_id' => $studentAccount->student_id,
+                    'role' => 'student',
+                ]);
+                
+                \Log::info('Auto-created user account for student', [
+                    'user_id' => $user->id,
+                    'student_id' => $studentAccount->student_id,
+                    'name' => $studentAccount->name,
+                ]);
             }
 
             // Check if student is already in the class
             if ($class->students()->where('users.id', $user->id)->exists()) {
                 return response()->json([
-                    'message' => 'Học sinh này đã có trong lớp',
+                    'message' => 'This student is already added to the class',
                 ], 422);
             }
 
@@ -181,12 +194,14 @@ class ClassController extends Controller
             $class->students()->attach($user->id);
 
             return response()->json([
-                'message' => 'Học sinh đã được thêm vào lớp',
+                'message' => 'Student has been added to the class successfully',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error adding student to class: ' . $e->getMessage());
+            \Log::error('Error adding student to class: ' . $e->getMessage(), [
+                'exception' => $e,
+            ]);
             return response()->json([
-                'message' => 'Lỗi khi thêm học sinh: ' . $e->getMessage(),
+                'message' => 'Error adding student: ' . $e->getMessage(),
             ], 500);
         }
     }

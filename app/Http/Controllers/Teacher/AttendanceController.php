@@ -32,11 +32,46 @@ class AttendanceController extends Controller
 
         // Load the students relationship
         $class->load('students');
+        $today = now()->toDateString();
+
+        // Get all students with their existing attendance records for today
+        $students = $class->students()
+            ->select('users.id', 'users.name', 'users.email', 'users.student_id')
+            ->get()
+            ->map(function ($user) use ($class, $today) {
+                $studentAccount = \App\Models\StudentAccount::where('student_id', $user->student_id)->first();
+                
+                // Get existing attendance record for this student today
+                $attendance = \App\Models\Attendance::where('student_id', $user->id)
+                    ->where('class_id', $class->id)
+                    ->whereDate('date', $today)
+                    ->first();
+                
+                return [
+                    'id' => $user->id,
+                    'name' => $studentAccount?->name ?? $user->name,
+                    'email' => $studentAccount?->email ?? $user->email,
+                    'student_id' => $user->student_id,
+                    'status' => $attendance?->status ?? 'unknown',
+                    'notes' => $attendance?->notes ?? '',
+                ];
+            });
 
         return Inertia::render('Teacher/Attendance/Index', [
             'classData' => $class,
-            'students' => $class->students()->get(),
-            'date' => now()->toDateString(),
+            'students' => $students,
+            'date' => $today,
+            'attendanceRecords' => \App\Models\Attendance::where('class_id', $class->id)
+                ->whereDate('date', $today)
+                ->get()
+                ->keyBy('student_id')
+                ->map(function ($record) {
+                    return [
+                        'status' => $record->status,
+                        'notes' => $record->notes,
+                        'method' => $record->method,
+                    ];
+                }),
         ]);
     }
 
@@ -205,15 +240,26 @@ class AttendanceController extends Controller
             'scanned_students.*.student_id' => 'required|exists:users,id',
             'scanned_students.*.student_name' => 'required|string',
             'scanned_students.*.student_email' => 'required|email',
-            'scanned_students.*.status' => 'required|in:present,late,absent',
+            'scanned_students.*.status' => 'required|in:present,late,absent,unknown',
             'scanned_students.*.method' => 'required|string',
             'scanned_students.*.confidence' => 'nullable|numeric',
             'scanned_students.*.notes' => 'nullable|string',
             'date' => 'required|date',
         ]);
 
-        // Load all students in the class
-        $allStudents = $class->students()->get();
+        // Load all students in the class with StudentAccount info
+        $allStudents = $class->students()
+            ->select('users.id', 'users.name', 'users.email', 'users.student_id')
+            ->get()
+            ->map(function ($user) {
+                $studentAccount = \App\Models\StudentAccount::where('student_id', $user->student_id)->first();
+                return [
+                    'id' => $user->id,
+                    'name' => $studentAccount?->name ?? $user->name,
+                    'email' => $studentAccount?->email ?? $user->email,
+                    'student_id' => $user->student_id,
+                ];
+            });
 
         return Inertia::render('Teacher/Attendance/Review', [
             'classData' => $class,
@@ -237,7 +283,7 @@ class AttendanceController extends Controller
             'date' => 'required|date',
             'attendance_records' => 'required|array',
             'attendance_records.*.student_id' => 'required|exists:users,id',
-            'attendance_records.*.status' => 'required|in:present,late,absent',
+            'attendance_records.*.status' => 'required|in:present,late,absent,unknown',
             'attendance_records.*.method' => 'required|string',
             'attendance_records.*.confidence' => 'nullable|numeric',
             'attendance_records.*.notes' => 'nullable|string',
@@ -294,7 +340,7 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'class_id' => 'required|exists:classes,id',
             'student_id' => 'required|exists:users,id',
-            'status' => 'required|in:present,late,absent',
+            'status' => 'required|in:present,late,absent,unknown',
             'notes' => 'nullable|string',
         ]);
 
@@ -326,6 +372,65 @@ class AttendanceController extends Controller
             ]);
         } catch (\Exception $e) {
             return ResponseHelper::error('Failed to mark attendance: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Mark attendance for multiple students at once
+     */
+    public function markAllAttendance(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'class_id' => 'required|exists:classes,id',
+            'date' => 'required|date',
+            'attendances' => 'required|array',
+            'attendances.*.student_id' => 'required|exists:users,id',
+            'attendances.*.status' => 'required|in:present,late,absent,unknown',
+            'attendances.*.method' => 'required|string',
+            'attendances.*.notes' => 'nullable|string',
+        ]);
+
+        try {
+            $class = ClassModel::findOrFail($validated['class_id']);
+            
+            // Verify teacher owns this class
+            if ($class->teacher_id !== auth()->id()) {
+                return ResponseHelper::error('Unauthorized', 403);
+            }
+
+            \DB::beginTransaction();
+
+            $savedCount = 0;
+            foreach ($validated['attendances'] as $attendance) {
+                \App\Models\Attendance::updateOrCreate(
+                    [
+                        'student_id' => $attendance['student_id'],
+                        'class_id' => $validated['class_id'],
+                        'date' => $validated['date'],
+                    ],
+                    [
+                        'status' => $attendance['status'],
+                        'method' => $attendance['method'],
+                        'marked_at' => now(),
+                        'notes' => $attendance['notes'] ?? null,
+                    ]
+                );
+                $savedCount++;
+            }
+
+            \DB::commit();
+
+            return ResponseHelper::success([
+                'message' => "Attendance saved successfully for {$savedCount} student(s)",
+                'count' => $savedCount,
+            ]);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Error saving bulk attendance', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return ResponseHelper::error('Failed to save attendance: ' . $e->getMessage());
         }
     }
 
