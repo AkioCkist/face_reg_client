@@ -1,59 +1,221 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Face Recognition Attendance System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A comprehensive web-based face recognition attendance system built with Laravel and Filament. This application leverages advanced face recognition technology to automate attendance tracking and user management across educational institutions.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Face Recognition**: Automated face detection and recognition for attendance tracking
+- **User Management**: Role-based access control (Admin, Student, Teacher)
+- **Attendance Tracking**: Track attendance with multiple methods and status updates
+- **Admin Dashboard**: Filament-powered admin interface for managing classes, students, and attendance records
+- **Face Embeddings**: Store and manage face embeddings for accurate recognition
+- **RESTful API**: Backend API integration for face recognition operations
+- **Authentication**: Secure user authentication system
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Project Structure
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```
+├── app/
+│   ├── Console/          # CLI commands
+│   ├── Enums/            # Enumeration classes (UserRole, AttendanceStatus, etc.)
+│   ├── Filament/         # Filament admin panel resources
+│   ├── Helpers/          # Helper functions (ImageHelper, ResponseHelper)
+│   ├── Http/             # Controllers, Middleware, Requests, Resources
+│   ├── Models/           # Eloquent models (User, Student, Face, Attendance, etc.)
+│   ├── Policies/         # Authorization policies
+│   ├── Providers/        # Service providers
+│   └── Services/         # Business logic services
+├── config/               # Application configuration files
+├── database/
+│   ├── migrations/       # Database migrations
+│   ├── factories/        # Model factories for testing
+│   └── seeders/          # Database seeders
+├── resources/
+│   ├── views/            # Blade templates
+│   ├── css/              # Tailwind CSS files
+│   └── js/               # JavaScript assets
+├── routes/               # Route definitions
+├── tests/                # Unit and feature tests
+├── storage/              # Application storage
+└── public/               # Publicly accessible files
+```
 
-## Learning Laravel
+## Requirements
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- PHP 8.1 or higher
+- Composer
+- Node.js and npm
+- Laravel 11.x
+- Database (MySQL/PostgreSQL)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Installation
 
-## Laravel Sponsors
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd face_reg_client
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+2. **Install PHP dependencies**
+   ```bash
+   composer install
+   ```
 
-### Premium Partners
+3. **Install Node.js dependencies**
+   ```bash
+   npm install
+   ```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+4. **Create environment configuration**
+   ```bash
+   cp .env.example .env
+   ```
 
-## Contributing
+5. **Generate application key**
+   ```bash
+   php artisan key:generate
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+6. **Configure database**
+   Update your `.env` file with database credentials, then run migrations:
+   ```bash
+   php artisan migrate
+   ```
 
-## Code of Conduct
+7. **Build frontend assets**
+   ```bash
+   npm run build
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+8. **Create storage symlink** (if needed)
+   ```bash
+   php artisan storage:link
+   ```
 
-## Security Vulnerabilities
+## Configuration
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Key Configuration Files
+
+- `config/api.php` - API configuration
+- `config/attendance.php` - Attendance-related settings
+- `config/constants.php` - Application constants
+- `config/filament.php` - Filament admin panel settings
+
+### Environment Variables
+
+Update the `.env` file with:
+- `APP_NAME`, `APP_URL`
+- `DB_*` - Database connection details
+- `MAIL_*` - Email configuration (if needed)
+- `API_*` - Backend API endpoints for face recognition
+
+## Usage
+
+### Running the Application
+
+1. **Development server**
+   ```bash
+   php artisan serve
+   ```
+
+2. **Development with Vite**
+   ```bash
+   npm run dev
+   ```
+
+3. **Access Filament Admin Panel**
+   Navigate to `http://localhost:8000/admin`
+
+### Managing Users and Roles
+
+Users are assigned specific roles (Admin, Student, Teacher) which determine their access levels and permissions. Use the admin panel to manage user roles and permissions.
+
+### Attendance Management
+
+- Track attendance through face recognition
+- View attendance history and reports
+- Multiple attendance methods supported
+- Attendance status management
+
+### Face Recognition
+
+- Upload and process face images
+- Generate and store face embeddings
+- Integrate with backend face recognition API
+- Automatic recognition and matching
+
+## Available Commands
+
+```bash
+# Run migrations
+php artisan migrate
+
+# Run tests
+php artisan test
+
+# Run PHPUnit tests
+./vendor/bin/phpunit
+
+# Clear application cache
+php artisan cache:clear
+
+# Create new Filament resource
+php artisan make:filament-resource ResourceName
+```
+
+## Testing
+
+Run the test suite using PHPUnit:
+
+```bash
+./vendor/bin/phpunit
+```
+
+Or use Laravel's test command:
+
+```bash
+php artisan test
+```
+
+## Services
+
+### FaceRecognitionService
+Handles face detection, embedding generation, and recognition logic.
+
+### BackendApiService
+Communicates with the backend API for face recognition operations.
+
+### UserService
+Manages user-related operations and business logic.
+
+## API Integration
+
+The application integrates with a backend API for face recognition. Configure the API endpoints in `config/api.php`.
+
+## Database Models
+
+- **User**: System users with roles
+- **StudentAccount**: Student-specific information
+- **Face**: Face records for users
+- **FaceEmbedding**: Vectorized face embeddings for recognition
+- **Attendance**: Attendance records
+- **ClassModel**: Class information and management
+
+## Security
+
+- Role-based access control (RBAC) with Filament policies
+- Input validation on all requests
+- CSRF protection enabled
+- Authentication middleware on protected routes
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is proprietary. All rights reserved.
+
+## Support
+
+For issues or questions, please contact the development team.
+
+---
+
+Built with ❤️ using Laravel, Filament, and modern web technologies.
